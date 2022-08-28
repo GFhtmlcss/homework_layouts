@@ -29,7 +29,7 @@ class Weather(QWidget):
         layout = QHBoxLayout() # основной лайаут
         layout_text = QVBoxLayout()
 
-        self.api_token = '22f2077ee1f82638ad1d2361df8a1cc8'
+        self.api_token = 'засекречено'
 
         self.city_name = self.get_city_name()
         self.get_today(self.city_name)
