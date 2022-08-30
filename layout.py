@@ -11,25 +11,27 @@ from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QGridLayout, QFormLayout
 
 #  TODO
 # 1 - узнать, как зафиксировать размер лэйаута
-# 2 - сделать кнопки кликабельными (менять блок справа по нажатию на кнопку) - частично, с багом
+# 2 - подставлять название города
 
-# 3 - вставлять данные из api в градусы на сегодня - выполнено
-# 4 - подставлять название города
+# 3 — проверять наличие параметра в ответе от АПИ прежде, чем его выводить ДЗ
+# https://colab.research.google.com/drive/1AigLclxX5AwSLCABHqWyRN4ES3d_skTV#scrollTo=5ZttjgiToX2N
 
-# если открыт какой-то другой блок, его надо скрыть
+# 4 - UTC, часовую зону надо учитывать
+
+# 5 - поработать над "Подробная погода"
 
 class Weather(QWidget):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle('Погода')
-        self.setGeometry(150, 150, 1500, 650)
+        self.setGeometry(150, 150, 1650, 650)
         # self.setMaximumSize(1750, 650)
 
         layout = QHBoxLayout() # основной лайаут
         layout_text = QVBoxLayout()
 
-        self.api_token = 'засекречено'
+        self.api_token = '22f2077ee1f82638ad1d2361df8a1cc8'
 
         self.city_name = self.get_city_name()
         self.get_today(self.city_name)
@@ -65,14 +67,15 @@ class Weather(QWidget):
         layout_weather_all = QHBoxLayout()
 
         self.weather_frame = QFrame()
-        self.weather_frame.setStyleSheet('')
 
         layout_weather = QVBoxLayout()
+        layout_weather_probel = QHBoxLayout()
         layout_weather_text_1 = QHBoxLayout()
         layout_weather_text_2 = QHBoxLayout()
         layout_weather_text_3 = QHBoxLayout()
         layout_weather_text_4 = QHBoxLayout()
         layout_weather_text_5 = QHBoxLayout()
+        layout_weather_warning = QHBoxLayout()
 
         weekday_num = datetime.datetime.today().weekday()  # число от 1 до 7, сегодняшний номер дня недели
         weekdays = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
@@ -81,17 +84,29 @@ class Weather(QWidget):
                             weekdays[(weekday_num + 3) % 7], weekdays[(weekday_num + 4) % 7]]
         print(*weekday_five_day)
 
+        self.get_next_five_days('moscow')
+
+        self.day0 = self.weather_forecast[0] # сегодня
+        self.day1 = self.weather_forecast[1] # завтра
+        self.day2 = self.weather_forecast[2] # послезавтра
+        self.day3 = self.weather_forecast[3] # через 2 дня (3-ий день)
+        self.day4 = self.weather_forecast[4] # четвертый день
+
         self.text_weather_text = QtWidgets.QLabel(self)
         self.text_weather_text.setFont(QFont('Arial', 12))
         self.text_weather_text.setText(weekday_five_day[0])
 
+        self.warning_text = QtWidgets.QLabel(self)
+        self.warning_text.setFont(QFont('Arial', 10))
+        self.warning_text.setText('Данные на 15:00, подробнее в "Подробная погода"')
+
         self.text_weather_text_du = QtWidgets.QLabel(self)
         self.text_weather_text_du.setFont(QFont('Arial', 12))
-        self.text_weather_text_du.setText('{} градусов'.format(self.temp))
+        self.text_weather_text_du.setText('{} градусов'.format(self.day0['main']['temp']))
 
         self.text_weather_text_du_feels_like = QtWidgets.QLabel(self)
         self.text_weather_text_du_feels_like.setFont(QFont('Arial', 12))
-        self.text_weather_text_du_feels_like.setText('ощущается как {} градусов'.format(self.feels_like))
+        self.text_weather_text_du_feels_like.setText('ощущается как {} градусов'.format(self.day0['main']['feels_like']))
 
         self.text_weather_text_1 = QtWidgets.QLabel(self)
         self.text_weather_text_1.setFont(QFont('Arial', 12))
@@ -99,11 +114,11 @@ class Weather(QWidget):
 
         self.text_weather_text_du_1 = QtWidgets.QLabel(self)
         self.text_weather_text_du_1.setFont(QFont('Arial', 12))
-        self.text_weather_text_du_1.setText('нетданных градусов')
+        self.text_weather_text_du_1.setText('{} градусов'.format(self.day1['main']['temp']))
 
         self.text_weather_text_du_feels_like_1 = QtWidgets.QLabel(self)
         self.text_weather_text_du_feels_like_1.setFont(QFont('Arial', 12))
-        self.text_weather_text_du_feels_like_1.setText('ощущается как нетданных градусов')
+        self.text_weather_text_du_feels_like_1.setText('ощущается как {} градусов'.format(self.day1['main']['feels_like']))
 
         self.text_weather_text_2 = QtWidgets.QLabel(self)
         self.text_weather_text_2.setFont(QFont('Arial', 12))
@@ -111,11 +126,11 @@ class Weather(QWidget):
 
         self.text_weather_text_du_2 = QtWidgets.QLabel(self)
         self.text_weather_text_du_2.setFont(QFont('Arial', 12))
-        self.text_weather_text_du_2.setText('нетданных градусов')
+        self.text_weather_text_du_2.setText('{} градусов'.format(self.day2['main']['temp']))
 
         self.text_weather_text_du_feels_like_2 = QtWidgets.QLabel(self)
         self.text_weather_text_du_feels_like_2.setFont(QFont('Arial', 12))
-        self.text_weather_text_du_feels_like_2.setText('ощущается как нетданных градусов')
+        self.text_weather_text_du_feels_like_2.setText('ощущается как {} градусов'.format(self.day2['main']['feels_like']))
 
         self.text_weather_text_3 = QtWidgets.QLabel(self)
         self.text_weather_text_3.setFont(QFont('Arial', 12))
@@ -123,11 +138,11 @@ class Weather(QWidget):
 
         self.text_weather_text_du_3 = QtWidgets.QLabel(self)
         self.text_weather_text_du_3.setFont(QFont('Arial', 12))
-        self.text_weather_text_du_3.setText('нетданных градусов')
+        self.text_weather_text_du_3.setText('{} градусов'.format(self.day3['main']['temp']))
 
         self.text_weather_text_du_feels_like_3 = QtWidgets.QLabel(self)
         self.text_weather_text_du_feels_like_3.setFont(QFont('Arial', 12))
-        self.text_weather_text_du_feels_like_3.setText('ощущается как нетданных градусов')
+        self.text_weather_text_du_feels_like_3.setText('ощущается как {} градусов'.format(self.day3['main']['feels_like']))
 
         self.text_weather_text_4 = QtWidgets.QLabel(self)
         self.text_weather_text_4.setFont(QFont('Arial', 12))
@@ -135,15 +150,16 @@ class Weather(QWidget):
 
         self.text_weather_text_du_4 = QtWidgets.QLabel(self)
         self.text_weather_text_du_4.setFont(QFont('Arial', 12))
-        self.text_weather_text_du_4.setText('нетданных градусов')
+        self.text_weather_text_du_4.setText('{} градусов'.format(self.day4['main']['temp']))
 
         self.text_weather_text_du_feels_like_4 = QtWidgets.QLabel(self)
         self.text_weather_text_du_feels_like_4.setFont(QFont('Arial', 12))
-        self.text_weather_text_du_feels_like_4.setText('ощущается как нетданных градусов')
+        self.text_weather_text_du_feels_like_4.setText('ощущается как {} градусов'.format(self.day4['main']['feels_like']))
 
         self.css_weather_days = 'color: rgb(103, 134, 153); margin-left: 50px' # стиль дней (воскресенье и тп)
-        self.css_weather_days_weather = 'color: rgb(103, 134, 153); background-color: rgb(232, 245, 255); margin: 30px; padding: 5px 15px 5px 15px; border-radius: 15px' # стиль текста дней (столько-то градусов и тп)
+        self.css_weather_days_weather = 'color: rgb(103, 134, 153); background-color: rgb(232, 245, 255); margin: 30px; padding: 15px; border-radius: 15px' # стиль текста дней (столько-то градусов и тп)
 
+        self.warning_text.setStyleSheet(self.css_weather_days)
         self.text_weather_text.setStyleSheet(self.css_weather_days)
         self.text_weather_text_1.setStyleSheet(self.css_weather_days)
         self.text_weather_text_2.setStyleSheet(self.css_weather_days)
@@ -160,6 +176,8 @@ class Weather(QWidget):
         self.text_weather_text_du_feels_like_3.setStyleSheet(self.css_weather_days_weather)
         self.text_weather_text_du_4.setStyleSheet(self.css_weather_days_weather)
         self.text_weather_text_du_feels_like_4.setStyleSheet(self.css_weather_days_weather)
+
+        layout_weather_probel.addWidget(self.warning_text, alignment=Qt.AlignCenter)
 
         layout_weather_text_1.addWidget(self.text_weather_text, alignment=Qt.AlignLeft)
         layout_weather_text_1.addWidget(self.text_weather_text_du, alignment=Qt.AlignRight)
@@ -180,6 +198,8 @@ class Weather(QWidget):
         layout_weather_text_5.addWidget(self.text_weather_text_4, alignment=Qt.AlignLeft)
         layout_weather_text_5.addWidget(self.text_weather_text_du_4, alignment=Qt.AlignRight)
         layout_weather_text_5.addWidget(self.text_weather_text_du_feels_like_4, alignment=Qt.AlignRight)
+
+        layout_weather_warning.addWidget(self.warning_text, alignment=Qt.AlignCenter)
 
         self.detailed_frame = QFrame()
 
@@ -209,7 +229,7 @@ class Weather(QWidget):
 
         layout_button = QVBoxLayout()
 
-        self.css_btn = 'background-color: rgb(175, 211, 222); border: 2px solid rgb(175, 211, 222); padding: 15px; border-radius:20px; color: rgb(84, 102, 107); max-width: 250px;'
+        self.css_btn = 'background-color: rgb(175, 211, 222); border: 2px solid rgb(175, 211, 222); padding: 15px; border-radius:20px; color: rgb(94, 124, 133); max-width: 250px;'
 
         self.btn1 = QPushButton('Погода на ближайшие дни')
         self.btn1.clicked.connect(self.set_option('weather'))
@@ -234,11 +254,15 @@ class Weather(QWidget):
         layout_button.addWidget(self.btn2)
         layout_button.addWidget(self.btn3)
 
+        layout_weather.addLayout(layout_weather_probel)
+
         layout_weather.addLayout(layout_weather_text_1)
         layout_weather.addLayout(layout_weather_text_2)
         layout_weather.addLayout(layout_weather_text_3)
         layout_weather.addLayout(layout_weather_text_4)
         layout_weather.addLayout(layout_weather_text_5)
+
+        layout_weather.addLayout(layout_weather_warning)
 
         self.weather_frame.setLayout(layout_weather)
 
@@ -261,17 +285,14 @@ class Weather(QWidget):
                 self.detailed_frame.hide()
                 self.settings_frame.hide()
                 self.weather_frame.show()
-                print(self.text_weather_base.styleSheet())
             elif option == 'detailed':
                 self.weather_frame.hide()
                 self.settings_frame.hide()
                 self.detailed_frame.show()
-                print(self.text_weather_base.styleSheet())
             else:
                 self.weather_frame.hide()
                 self.detailed_frame.hide()
                 self.settings_frame.show()
-                print(self.text_weather_base.styleSheet())
 
         return options
 
@@ -283,6 +304,15 @@ class Weather(QWidget):
         self.temp = self.today_data['main']['temp']
         self.feels_like = self.today_data['main']['feels_like']
         self.main_weather = self.today_data['weather'][0]['description']
+
+    def get_next_five_days(self, city):
+        params_five_day = {'q': city, 'appid': self.api_token, 'units': 'metric', 'lang': 'ru'}
+        response_five_day = requests.get('https://api.openweathermap.org/data/2.5/forecast?', params=params_five_day)
+        data_five_day = response_five_day.json()
+        self.weather_forecast = []
+        for i in data_five_day['list']:
+            if '15:00:00' in i['dt_txt']:
+                self.weather_forecast.append(i)
 
     def get_city_name(self):
         # в будущем будет возвращать название того города, который имел в виду пользователь
